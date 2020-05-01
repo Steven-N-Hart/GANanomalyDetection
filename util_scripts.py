@@ -276,7 +276,7 @@ def evaluate_metrics(run_id, log, metrics, num_images, real_passes, minibatch_si
 #My scripts
 #Anomaly detection
 
-def anomaly_detection_encoder(run_id, test_data_folder, log, test_batch_size=10, start_at_batch=0):
+def anomaly_detection_encoder(run_id, test_data_folder, log, test_batch_size=10, start_at_batch=0, end_at_batch=10):
 	
 	result_subdir = misc.locate_result_subdir(run_id)
 	snapshot_pkls = misc.list_network_pkls(result_subdir, include_final=True)
@@ -286,8 +286,10 @@ def anomaly_detection_encoder(run_id, test_data_folder, log, test_batch_size=10,
 	with tf.Graph().as_default(), tfutil.create_session(config.tf_config).as_default():
 		#Load network from specific run
 		G, D, Gs, E = misc.load_pkl(snapshot_pkls[-1])
-		Ga = tfutil.Network('G_anomaly', num_channels=G.output_shapes[0][1],
-							resolution=G.output_shapes[0][2], label_size=dataset_obj.label_size, **config.G_anomaly)
+
+		# Take off the requirement of the generator having labels
+		Ga = tfutil.Network('G_anomaly', num_channels=Gs.output_shapes[0][1],
+							resolution=Gs.output_shapes[0][2], label_size=dataset_obj.label_size, **config.G_anomaly)
 		Ga.copy_vars_from(Gs)
 
 		print("Initializing Anomaly detector")

@@ -12,7 +12,6 @@ import importlib
 import imp
 import math
 import numpy as np
-from matplotlib.pyplot import imread
 from collections import OrderedDict
 import tensorflow as tf
 from glob import glob
@@ -858,15 +857,15 @@ class AnomalyDetectorEncoder(object):
         sess = tf.get_default_session()
         samples = sess.run(closest_matches)
 
-        errors = np.absolute(samples - test_data) - 1
+        samples = (np.array(samples) + 1) * 127.5
+
+        errors = np.absolute(samples - test_data)
         errors = np.mean(errors, axis=1)
 
-        samples = (np.array(samples) + 1) * 127.5
-        sources = (np.array(test_data) + 1) * 127.5
-        errors = (np.array(errors) + 1) * 127.5
+        sources = test_data
 
         for i in range(samples.shape[0]):
-            source_img = sources[i, :, :, :]
+            source_img = sources[i]
             i_sample = samples[i, :, :, :]
             i_error = errors[i, :, :]
 
@@ -901,7 +900,8 @@ class AnomalyDetectorEncoder(object):
 
 
     def imread(self, path):
-        img = imread(path, format='PNG').astype(np.float)
+        img = cv2.imread(path)
+        #img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
         assert(img.shape[0] == self.img_size)
         return img
 
@@ -926,4 +926,6 @@ class AnomalyDetectorEncoder(object):
         batch_images_t = [img - 127.5 for img in batch_images_t]
         batch_images_t = [img / 127.5 for img in batch_images_t]
 
+        norm_img = np.zeros((batch_images_t[0].shape[1], batch_images_t[0].shape[1]))
+        batch_images_t = [cv2.normalize(img, norm_img, 0, 255, cv2.NORM_MINMAX) for img in batch_images_t]
         return batch_images_t
